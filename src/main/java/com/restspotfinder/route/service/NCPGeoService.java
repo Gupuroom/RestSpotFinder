@@ -1,11 +1,11 @@
-package com.restspotfinder.geo.service;
+package com.restspotfinder.route.service;
 
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.restspotfinder.geo.domain.GeoPoint;
 import lombok.RequiredArgsConstructor;
+import org.locationtech.jts.geom.Coordinate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -17,12 +17,11 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 
 @Component
 @RequiredArgsConstructor
-public class GeoService {
+public class NCPGeoService {
     @Value("${ncp.geo.url}")
     String POINT_URL;
     @Value("${ncp.geo.direct5-url}")
@@ -32,32 +31,33 @@ public class GeoService {
     @Value("${ncp.geo.client-secret}")
     String CLIENT_SECRET;
 
-    public GeoPoint getGeoPoint(String address) {
+    public Coordinate getCoordinate(String address) {
         String requestURL = POINT_URL + "?query=" + address;
 
         JsonNode jsonNode = connect(requestURL);
         JsonNode addressesNode = jsonNode.get("addresses").get(0);
-        System.out.println("roadAddress = " + getDirectTextFromJsonNode(addressesNode, "roadAddress"));
-        System.out.println("jibunAddress = " + getDirectTextFromJsonNode(addressesNode, "jibunAddress"));
+        System.out.println("roadAddress = " + addressesNode.get("roadAddress"));
+        System.out.println("jibunAddress = " + addressesNode.get("jibunAddress"));
 
-        return GeoPoint.from(
-                getDirectTextFromJsonNode(addressesNode, "x"),
-                getDirectTextFromJsonNode(addressesNode, "y"));
+        double x = addressesNode.get("x").asDouble();
+        double y = addressesNode.get("y").asDouble();
+        return new Coordinate(x, y);
     }
 
-    public List<GeoPoint> getRouteData(String start, String goal) {
+    public Coordinate[] getRouteData(String start, String goal) {
         String requestURL = ROUTE_URL + "?start=" + start + "&goal=" + goal + "&option=trafast";
 
         JsonNode jsonNode = connect(requestURL);
         ArrayNode pathArray = (ArrayNode) jsonNode.get("route").get("trafast").get(0).get("path");
-        List<GeoPoint> route = new ArrayList<>();
+
+        List<Coordinate> route = new ArrayList<>();
         for (JsonNode path : pathArray) {
-            String x = path.get(0).asText();
-            String y = path.get(1).asText();
-            route.add(GeoPoint.from(x, y));
+            double x = path.get(0).asDouble();
+            double y = path.get(1).asDouble();
+            route.add(new Coordinate(x, y));
         }
 
-        return route;
+        return route.toArray(new Coordinate[0]);
     }
 
     public JsonNode connect(String requestURL) {
@@ -76,11 +76,5 @@ public class GeoService {
             e.printStackTrace();
             throw new RuntimeException();
         }
-    }
-
-    private String getDirectTextFromJsonNode(JsonNode jsonNode, String fieldName) {
-        return Optional.ofNullable(jsonNode.get(fieldName))
-                .map(JsonNode::asText)
-                .orElse("");
     }
 }
