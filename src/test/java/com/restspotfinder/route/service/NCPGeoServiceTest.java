@@ -1,36 +1,41 @@
-package com.restspotfinder.geo;
+package com.restspotfinder.route.service;
 
-import com.restspotfinder.geo.domain.GeoPoint;
-import com.restspotfinder.geo.service.GeoService;
+import com.restspotfinder.route.domain.TempPoint;
 import com.restspotfinder.route.domain.TempRoute;
+import com.restspotfinder.route.repository.TempPointRepository;
 import com.restspotfinder.route.repository.TempRouteRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.List;
 
+
 @SpringBootTest
 @ExtendWith(SpringExtension.class)
-class GeoServiceTest {
+class NCPGeoServiceTest {
     @Autowired
-    GeoService geoService;
+    NCPGeoService NCPGeoService;
     @Autowired
     TempRouteRepository tempRouteRepository;
+    @Autowired
+    TempPointRepository tempPointRepository;
+
 
     @Test
-    void getGeoPoint() {
+    void getCoordinate() {
         // given
         String address = "충북 옥천군 옥천읍 중앙로 99";
 
         // when
-        GeoPoint geoPoint = geoService.getGeoPoint(address);
+        Coordinate coordinate = NCPGeoService.getCoordinate(address);
 
         // then
-        System.out.println("GeoPoint = " +  geoPoint);
+        System.out.println("coordinate = " +  coordinate);
     }
 
     @Test
@@ -45,11 +50,15 @@ class GeoServiceTest {
 //        String goal = "127.9112630,36.2245680"; // 황간역
 
         // when
-        List<GeoPoint>  pointList = geoService.getRouteData(start, goal);
+        Coordinate[] coordinates = NCPGeoService.getRouteData(start, goal);
 
         // then
-        for(GeoPoint p : pointList){
-            System.out.println("p = " + p);
-        }
+        GeometryFactory geometryFactory = new GeometryFactory();
+
+        TempRoute tempRoute = TempRoute.from(geometryFactory, coordinates);
+        TempRoute savedTempRoute = tempRouteRepository.save(tempRoute);
+
+        List<TempPoint> tempPointList = TempPoint.fromList(geometryFactory, coordinates, savedTempRoute.getRouteId());
+        tempPointRepository.saveAll(tempPointList);
     }
 }

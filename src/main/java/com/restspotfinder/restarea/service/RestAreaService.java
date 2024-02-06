@@ -5,6 +5,9 @@ import com.restspotfinder.restarea.repository.RestAreaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
+
 @Service
 @RequiredArgsConstructor
 public class RestAreaService {
@@ -17,5 +20,9 @@ public class RestAreaService {
     public RestArea getOneById(long restAreaId){
         return restAreaRepository.findById(restAreaId)
                 .orElseThrow(() -> new NullPointerException("[RestArea] restAreaId : " + restAreaId));
+    }
+
+    public List<RestArea> getNearbyRoutes(long routeId) {
+        return restAreaRepository.findNearbyRoutes(routeId).stream().distinct().toList();
     }
 }
