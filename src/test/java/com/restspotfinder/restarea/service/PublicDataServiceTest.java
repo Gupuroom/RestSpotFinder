@@ -15,19 +15,14 @@ import java.util.List;
 class PublicDataServiceTest {
     @Autowired
     PublicDataService publicDataService;
-    @Autowired
-    RestAreaRepository restAreaRepository;
 
     @Test
-    void getRestStopData() {
+    void getRestAreaData() {
         // given
-        int pageNo = 3;
-        int numOfRows = 99;
 
         // when
-        List<RestArea> restAreaList =  publicDataService.getRestAreaData(pageNo, numOfRows);
+        List<RestArea> restAreaList =  publicDataService.getRestAreaData();
 
         // then
-        restAreaRepository.saveAll(restAreaList);
     }
 }
