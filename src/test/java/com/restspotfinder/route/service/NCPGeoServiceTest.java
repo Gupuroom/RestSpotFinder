@@ -1,12 +1,18 @@
-package com.restspotfinder.route.repository.service;
+package com.restspotfinder.route.service;
 
-import com.restspotfinder.route.service.NCPGeoService;
+import com.restspotfinder.route.domain.TempPoint;
+import com.restspotfinder.route.domain.TempRoute;
+import com.restspotfinder.route.repository.TempPointRepository;
+import com.restspotfinder.route.repository.TempRouteRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import java.util.List;
 
 
 @SpringBootTest
@@ -14,6 +20,11 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 class NCPGeoServiceTest {
     @Autowired
     NCPGeoService NCPGeoService;
+    @Autowired
+    TempRouteRepository tempRouteRepository;
+    @Autowired
+    TempPointRepository tempPointRepository;
+
 
     @Test
     void getCoordinate() {
@@ -42,5 +53,12 @@ class NCPGeoServiceTest {
         Coordinate[] coordinates = NCPGeoService.getRouteData(start, goal);
 
         // then
+        GeometryFactory geometryFactory = new GeometryFactory();
+
+        TempRoute tempRoute = TempRoute.from(geometryFactory, coordinates);
+        TempRoute savedTempRoute = tempRouteRepository.save(tempRoute);
+
+        List<TempPoint> tempPointList = TempPoint.fromList(geometryFactory, coordinates, savedTempRoute.getRouteId());
+        tempPointRepository.saveAll(tempPointList);
     }
 }
