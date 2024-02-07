@@ -20,11 +20,14 @@ public class TempRoute {
     private Long routeId;
     @Column(columnDefinition = "geometry(LineString, 4326)")
     private LineString lineString;
+    @Enumerated(EnumType.STRING)
+    private OptionCode optionCode;
     private LocalDateTime createdDate;
 
-    public static TempRoute from(GeometryFactory geometryFactory, Coordinate[] coordinates) {
+    public static TempRoute from(GeometryFactory geometryFactory, Coordinate[] coordinates, OptionCode optionCode) {
         return TempRoute.builder()
                 .lineString(geometryFactory.createLineString(coordinates))
+                .optionCode(optionCode)
                 .createdDate(LocalDateTime.now())
                 .build();
     }
