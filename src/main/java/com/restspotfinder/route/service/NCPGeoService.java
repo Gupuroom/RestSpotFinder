@@ -4,6 +4,7 @@ package com.restspotfinder.route.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.restspotfinder.route.domain.OptionCode;
 import lombok.RequiredArgsConstructor;
 import org.locationtech.jts.geom.Coordinate;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +18,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 
 @Component
@@ -44,19 +46,30 @@ public class NCPGeoService {
         return new Coordinate(x, y);
     }
 
-    public Coordinate[] getRouteData(String start, String goal) {
-        String requestURL = ROUTE_URL + "?start=" + start + "&goal=" + goal + "&option=trafast";
-
+    public Map<OptionCode, Coordinate[]> getRouteData(String start, String goal) {
+        List<String> optionList = List.of(OptionCode.optimal.getValue(), OptionCode.fast.getValue(), OptionCode.avoidtoll.getValue());
+        String requestURL = ROUTE_URL + "?start=" + start + "&goal=" + goal + "&option=" + String.join(":", optionList);
         JsonNode jsonNode = connect(requestURL);
-        ArrayNode pathArray = (ArrayNode) jsonNode.get("route").get("trafast").get(0).get("path");
 
+        // 경로 데이터 추출
+        Coordinate[] fastRoute = extractRoute(jsonNode, OptionCode.fast);
+        Coordinate[] optimalRoute = extractRoute(jsonNode, OptionCode.optimal);
+        Coordinate[] avoidtollRoute = extractRoute(jsonNode, OptionCode.avoidtoll);
+
+        return Map.of(
+                OptionCode.fast, fastRoute,
+                OptionCode.optimal, optimalRoute,
+                OptionCode.avoidtoll, avoidtollRoute);
+    }
+
+    private Coordinate[] extractRoute(JsonNode jsonNode, OptionCode optionCode) {
+        ArrayNode pathNode = (ArrayNode) jsonNode.get("route").get(optionCode.getValue()).get(0).get("path");
         List<Coordinate> route = new ArrayList<>();
-        for (JsonNode path : pathArray) {
+        for (JsonNode path : pathNode) {
             double x = path.get(0).asDouble();
             double y = path.get(1).asDouble();
             route.add(new Coordinate(x, y));
         }
-
         return route.toArray(new Coordinate[0]);
     }
 
